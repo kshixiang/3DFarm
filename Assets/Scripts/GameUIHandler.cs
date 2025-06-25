@@ -1,37 +1,26 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class GameUIHandler : MonoBehaviour
 {
     public static GameUIHandler Instance;
-    [SerializeField]
-    private GameObject opt;
+    [SerializeField] private GameObject opt;
 
-    public bool Preview
-    {
-        get;
-        set;
-    }
+    public bool Preview { get; set; }
 
     private void Awake()
     {
         Instance = this;
     }
-    
-    
+
 
     // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
-        
     }
 
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        
     }
 
     public void HandlerOpt()
@@ -41,7 +30,7 @@ public class GameUIHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// 预览模式
+    ///     预览模式
     /// </summary>
     /// <param name="status"></param>
     public void OnToogle(bool status)

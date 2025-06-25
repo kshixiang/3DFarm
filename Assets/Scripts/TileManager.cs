@@ -1,13 +1,11 @@
-using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 public class TileManager : MonoBehaviour
 {
-    public float rote = 0;
-    public static TileManager Instance { get; private set; }
+    public float rote;
     public GameObject tilePrefab; // 地块预制件，在Inspector中拖入
-    private Dictionary<Vector2Int, List<Tile3D>> grid = new Dictionary<Vector2Int, List<Tile3D>>();
     public int maxStackHeight = 10; // 最大叠放层数
 
     // --- 修改部分 ---
@@ -15,12 +13,14 @@ public class TileManager : MonoBehaviour
     // [SerializeField] 使得我们可以在Inspector中看到自动计算出的值，方便调试
     [SerializeField] private float planarSize; // XZ平面的网格尺寸
     [SerializeField] private float stackHeight; // Y轴的堆叠高度
+    private readonly Dictionary<Vector2Int, List<Tile3D>> grid = new();
+    public static TileManager Instance { get; private set; }
 
     // 使用公开属性，让其他脚本可以读取尺寸，但不能修改，更安全。
     public float PlanarSize { get; private set; }
     public float StackHeight { get; private set; }
 
-    void Awake()
+    private void Awake()
     {
         if (Instance == null)
         {
@@ -36,7 +36,7 @@ public class TileManager : MonoBehaviour
 
     // --- 新增方法 ---
     /// <summary>
-    /// 根据 tilePrefab 自动计算网格尺寸和堆叠高度
+    ///     根据 tilePrefab 自动计算网格尺寸和堆叠高度
     /// </summary>
     private void CalculateGridSizeFromPrefab()
     {
@@ -49,7 +49,7 @@ public class TileManager : MonoBehaviour
         // --- 修改后的诊断代码 ---
 
         // 1. 获取 Renderer 组件，它包含了最终的世界尺寸信息
-        Renderer prefabRenderer = tilePrefab.GetComponentInChildren<Renderer>();
+        var prefabRenderer = tilePrefab.GetComponentInChildren<Renderer>();
         if (prefabRenderer == null)
         {
             Debug.LogError("TileManager: tilePrefab 上没有找到 Renderer 组件！");
@@ -57,7 +57,7 @@ public class TileManager : MonoBehaviour
         }
 
         // 2. 获取 MeshFilter 组件，它包含了未经缩放的原始模型信息
-        MeshFilter prefabMeshFilter = tilePrefab.GetComponentInChildren<MeshFilter>();
+        var prefabMeshFilter = tilePrefab.GetComponentInChildren<MeshFilter>();
         if (prefabMeshFilter == null || prefabMeshFilter.sharedMesh == null)
         {
             Debug.LogError("TileManager: tilePrefab 上没有找到 MeshFilter 或有效的 Mesh！");
@@ -65,9 +65,9 @@ public class TileManager : MonoBehaviour
         }
 
         // 3. 获取各个尺寸和缩放值
-        Vector3 finalWorldSize = prefabRenderer.bounds.size;
-        Vector3 originalMeshSize = prefabMeshFilter.sharedMesh.bounds.size;
-        Vector3 prefabScale = tilePrefab.transform.localScale;
+        var finalWorldSize = prefabRenderer.bounds.size;
+        var originalMeshSize = prefabMeshFilter.sharedMesh.bounds.size;
+        var prefabScale = tilePrefab.transform.localScale;
 
         // 4. 打印所有信息到控制台
         Debug.Log("--- TILE SIZE DIAGNOSTICS ---");
@@ -87,20 +87,14 @@ public class TileManager : MonoBehaviour
         stackHeight = finalWorldSize.y;
 
 
-        if (planarSize <= 0.001f)
-        {
-            Debug.LogError("计算出的平面尺寸过小或为0！请检查模型的导入设置和预制件的Scale。");
-        }
+        if (planarSize <= 0.001f) Debug.LogError("计算出的平面尺寸过小或为0！请检查模型的导入设置和预制件的Scale。");
     }
 
     // 获取位置的堆叠高度
     public int GetStackHeight(Vector3 position)
     {
         var gridPos = WorldToGridPos(position);
-        if (grid.TryGetValue(gridPos, out List<Tile3D> tileStack))
-        {
-            return tileStack.Count;
-        }
+        if (grid.TryGetValue(gridPos, out var tileStack)) return tileStack.Count;
 
         return 0;
     }
@@ -108,7 +102,7 @@ public class TileManager : MonoBehaviour
     public void RevemoveTile(Vector3 position)
     {
         // --- 修改部分：使用 planarSize 和 stackHeight ---
-        Vector2Int gridPos = new Vector2Int(
+        var gridPos = new Vector2Int(
             Mathf.FloorToInt(position.x / planarSize),
             Mathf.FloorToInt(position.z / planarSize)
         );
@@ -118,45 +112,31 @@ public class TileManager : MonoBehaviour
 
     // --- 新增 IsTopTile 方法 ---
     /// <summary>
-    /// 检查一个地块实例是否是其所在堆叠的最顶层地块
+    ///     检查一个地块实例是否是其所在堆叠的最顶层地块
     /// </summary>
     public bool IsTopTile(Tile3D tile)
     {
-        Vector2Int gridPos = WorldToGridPos(tile.transform.position);
-        if (grid.TryGetValue(gridPos, out List<Tile3D> tileStack) && tileStack.Count > 0)
-        {
+        var gridPos = WorldToGridPos(tile.transform.position);
+        if (grid.TryGetValue(gridPos, out var tileStack) && tileStack.Count > 0)
             if (tileStack.Contains(tile))
-            {
                 return tileStack.Last() == tile;
-            }
-        }
 
         return true;
     }
 
-
-    public void ClearAll()
-    {
-      //  grid?.Clear();
-    }
-
     /// <summary>
-    /// 旋转需要更新对应的位置
+    ///     旋转需要更新对应的位置
     /// </summary>
     public void Rotation()
     {
         var valueCollection = grid?.Values.ToList();
         if (valueCollection != null)
-        {
             foreach (var tile3Dse in valueCollection)
-            {
                 for (var index = 0; index < tile3Dse.Count; index++)
                 {
                     var tile3D = tile3Dse[index];
                     PlaceTile(tile3D, false);
                 }
-            }
-        }
     }
 
 
@@ -166,19 +146,19 @@ public class TileManager : MonoBehaviour
         RemoveFromGrid(tileToPlace);
 
         // 1. 获取地块在世界中的目标位置
-        Vector3 worldPosition = tileToPlace.transform.position;
+        var worldPosition = tileToPlace.transform.position;
         // 2. 将世界位置转换为基于TileManager的局部网格坐标
-        Vector2Int gridPos = WorldToGridPos(worldPosition);
+        var gridPos = WorldToGridPos(worldPosition);
         // 3. 在这个局部网格坐标上获取当前高度
-        int currentHeight = GetStackHeight(worldPosition);
+        var currentHeight = GetStackHeight(worldPosition);
 
         if (currentHeight < maxStackHeight)
         {
             // 4. 计算出在TileManager局部坐标系下的、对齐网格的最终位置
-            Vector3 finalLocalPosition = new Vector3(
-                gridPos.x * PlanarSize + (PlanarSize / 2f),
+            var finalLocalPosition = new Vector3(
+                gridPos.x * PlanarSize + PlanarSize / 2f,
                 currentHeight * StackHeight,
-                gridPos.y * PlanarSize + (PlanarSize / 2f)
+                gridPos.y * PlanarSize + PlanarSize / 2f
             );
 
             if (updatePos)
@@ -188,22 +168,17 @@ public class TileManager : MonoBehaviour
                 // 6. （关键）同时，让地块的旋转与TileManager的旋转保持一致
                 tileToPlace.transform.rotation = transform.rotation;
             }
-        
+
 
             // 7. 将地块添加到数据结构中
-            if (!grid.ContainsKey(gridPos))
-            {
-                grid[gridPos] = new List<Tile3D>();
-            }
+            if (!grid.ContainsKey(gridPos)) grid[gridPos] = new List<Tile3D>();
 
             grid[gridPos].Add(tileToPlace);
             return true;
         }
-        else
-        {
-            Destroy(tileToPlace.gameObject);
-            return false;
-        }
+
+        Destroy(tileToPlace.gameObject);
+        return false;
     }
 
     // --- 新增一个辅助方法，用于从任何列表中移除一个地块 ---
@@ -212,17 +187,14 @@ public class TileManager : MonoBehaviour
         var valueCollection = grid?.Values;
         if (tile == null || valueCollection == null) return;
 
-        foreach (var tile3Dse in valueCollection)
-        {
-            tile3Dse.Remove(tile);
-        }
+        foreach (var tile3Dse in valueCollection) tile3Dse.Remove(tile);
     }
 
     // --- 辅助方法，将任何世界坐标点转换为本对象的局部网格坐标 ---
     private Vector2Int WorldToGridPos(Vector3 worldPosition)
     {
         // 1. 将世界坐标点转换为TileManager的局部坐标点
-        Vector3 localPosition = transform.InverseTransformPoint(worldPosition);
+        var localPosition = transform.InverseTransformPoint(worldPosition);
         // 2. 在局部坐标系下进行网格计算
         return new Vector2Int(
             Mathf.FloorToInt(localPosition.x / PlanarSize),
