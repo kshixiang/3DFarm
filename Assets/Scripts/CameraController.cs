@@ -50,8 +50,6 @@ public class CameraController : MonoBehaviour
         HandleZoom(); // 调用新的FOV缩放方法
     }
 
-    // GetFocusPoint, HandleRotation, HandleMovement 方法完全保持不变
-    // ...
     private Vector3 GetFocusPoint()
     {
         Ray cameraRay = new Ray(transform.position, transform.forward);
@@ -85,7 +83,7 @@ public class CameraController : MonoBehaviour
     }
 
     /// <summary>
-    /// 全新：处理鼠标滚轮，通过改变Field of View来实现缩放
+    /// 处理鼠标滚轮，通过改变Field of View来实现缩放
     /// </summary>
     private void HandleZoom()
     {
